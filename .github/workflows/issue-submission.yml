@@ -1,0 +1,72 @@
+name: issue submission
+
+# Rows pasted into an issue: check each one, file the good ones, commit to main, close the issue
+# with a report. If any row fails, nothing is committed. An issue with no hash,name lines in it is
+# left alone.
+
+on:
+  issues:
+    types: [opened, edited]
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    concurrency: { group: hashdb-main, cancel-in-progress: false }
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+
+      - name: Extract rows from the issue body
+        id: extract
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const body = context.payload.issue.body || '';
+            // accept "hash,name", "hash<TAB>name" or "hash name"; everything else is ignored
+            const rows = [];
+            for (const raw of body.split(/\r?\n/)) {
+              const m = raw.trim().match(/^(?:0x)?([0-9A-Fa-f]{16})[\t, ]+(.+?)\s*$/);
+              if (m) rows.push(m[1].toUpperCase() + ',' + (/[",]/.test(m[2]) ? '"' + m[2].replace(/"/g, '""') + '"' : m[2]));
+            }
+            fs.writeFileSync('/tmp/rows.csv', rows.join('\n') + '\n');
+            core.setOutput('count', String(rows.length));
+            core.info(`${rows.length} candidate rows`);
+
+      - name: Validate and file
+        id: ingest
+        if: steps.extract.outputs.count != '0'
+        shell: bash
+        run: |
+          set +e
+          python tools/validate.py --add /tmp/rows.csv | tee /tmp/report.txt
+          echo "rc=${PIPESTATUS[0]}" >> $GITHUB_OUTPUT
+
+      - name: Commit verified rows
+        if: steps.ingest.outputs.rc == '0'
+        run: |
+          git config user.name "hashdb-bot"
+          git config user.email "hashdb-bot@users.noreply.github.com"
+          git add csv
+          git commit -m "names from issue #${{ github.event.issue.number }}" -m "$(grep -c '^FILED' /tmp/report.txt) rows, each re-verified by tools/validate.py"
+          git push origin HEAD:main
+
+      - name: Report and close
+        if: steps.extract.outputs.count != '0'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const report = fs.readFileSync('/tmp/report.txt', 'utf8');
+            const rc = '${{ steps.ingest.outputs.rc }}';
+            const head = rc === '0' ? 'Added to main. Closing.' :
+                         rc === '2' ? 'Nothing to add. Every row is already in the database.' :
+                         'Nothing was added. The rows marked FAIL do not hash to the value given. Edit the issue to try again.';
+            await github.rest.issues.createComment({ ...context.repo, issue_number: context.issue.number, body: head + '\n\n```\n' + report.slice(0, 60000) + '\n```' });
+            if (rc === '0') await github.rest.issues.update({ ...context.repo, issue_number: context.issue.number, state: 'closed', state_reason: 'completed' });

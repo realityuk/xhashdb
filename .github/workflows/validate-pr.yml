@@ -1,0 +1,75 @@
+name: validate
+
+# Every pull request that touches csv/ is checked by recomputing every row of each changed file.
+# The validator that runs is always the one on the base branch, never the PR's copy, so a PR cannot
+# bring its own approver. A PR that changes only csv/ and passes is labelled `verified` and merged
+# automatically (repository setting "Allow auto-merge" must be on and the `validate` check required).
+# A PR that also touches tools/ or workflows is validated but left for a human.
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened]
+    paths: ["csv/**", "tools/**", ".github/**"]
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the BASE branch (trusted tools)
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+
+      - name: Fetch the PR head (data only is ever read from it)
+        run: git fetch origin "+refs/pull/${{ github.event.pull_request.number }}/head:refs/pr-head"
+
+      - name: Validate added rows
+        id: check
+        shell: bash
+        run: |
+          set +e
+          mkdir -p /tmp/base /tmp/head
+          changed=$(git diff --name-only ${{ github.event.pull_request.base.sha }} refs/pr-head)
+          echo "$changed" > /tmp/changed.txt
+          data_only=true; fail=0; report=/tmp/report.md; : > $report
+          while IFS= read -r f; do
+            [ -z "$f" ] && continue
+            case "$f" in csv/*/*.csv) ;; *) data_only=false; continue ;; esac
+            mkdir -p "/tmp/head/$(dirname $f)"
+            git show "refs/pr-head:$f" > "/tmp/head/$f" 2>/dev/null || : > "/tmp/head/$f"
+            echo "### $f" >> $report
+            python tools/validate.py "/tmp/head/$f" | tee -a $report
+            [ ${PIPESTATUS[0]} -ne 0 ] && fail=1
+            echo >> $report
+          done < /tmp/changed.txt
+          echo "data_only=$data_only" >> $GITHUB_OUTPUT
+          echo "fail=$fail" >> $GITHUB_OUTPUT
+          exit $fail
+
+      - name: Comment the result
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const body = fs.existsSync('/tmp/report.md') ? fs.readFileSync('/tmp/report.md', 'utf8') : 'no data files changed';
+            const ok = '${{ steps.check.outputs.fail }}' === '0';
+            await github.rest.issues.createComment({ ...context.repo, issue_number: context.issue.number,
+              body: (ok ? 'Every added row checks out.\n\n' : 'Nothing merged. The rows marked FAIL do not hash to the value given.\n\n') + '```\n' + body.slice(0, 60000) + '\n```' });
+
+      - name: Label and auto-merge a clean data-only PR
+        if: steps.check.outputs.fail == '0' && steps.check.outputs.data_only == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr edit ${{ github.event.pull_request.number }} --add-label verified
+          gh pr merge ${{ github.event.pull_request.number }} --auto --squash

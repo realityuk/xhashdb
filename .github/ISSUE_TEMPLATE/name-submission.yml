@@ -1,0 +1,17 @@
+name: Name submission
+description: Paste hash,name rows. A bot checks them, files the good ones and closes the issue.
+body:
+  - type: markdown
+    attributes:
+      value: |
+        One pair per line, `hash,name` (tab or space works too). Hash is 16 hex digits.
+        Each row is checked: the name has to hash to that value. You don't need to say which function.
+  - type: textarea
+    id: rows
+    attributes:
+      label: Rows
+      placeholder: |
+        AF199842C30AB910,r_hudblurexcludeinworld
+        7251693DE3E56C8F,stateinitsavexuidofuwarning
+    validations:
+      required: true
