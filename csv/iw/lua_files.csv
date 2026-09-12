@@ -8022,3 +8022,14 @@ hash,name
 7FF7ED88F1E42D60,ui/generated/widgets/frontend/battlemapv2/bpbundlepurchaseblade.lua
 7FFA841538647FFA,ui/generated/widgets/ftue/rex/ftuehintsection.lua
 7FFCE250A1A207A6,ui/generated/widgets/textstrikethroughbacking.lua
+091BC3B7F3486D0E,ui/generated/widgets/scriptedwidgetlootsplash.lua
+1A0E5E3961A66557,ui/generated/widgets/ingame/sp/scriptedwidgethintcontainer.lua
+1A553164B02E4577,ui/generated/widgets/ingame/sp/rex/scriptedwidgetcombinationlock.lua
+277018358B3F2565,ui/generated/widgets/ingame/rew/scriptedwidgetvictorydefeatscreen.lua
+28192536397262ED,ui/generated/widgets/ingame/sp/mapspecific/union/scriptedwidgetspycameraunionlisteningdevice.lua
+3622902534B57125,ui/generated/widgets/scriptedwidgets/scriptedwidgetchallenges.lua
+4A50C561D29B1998,ui/generated/widgets/ingame/scriptedwidgetvictorydefeatscreen.lua
+4AC4E740904687D9,ui/utils/victorydefeatscreenutils.lua
+5CA2790669107795,ui/generated/widgets/ingame/sp/t10/scriptedwidgetcompassareadisplaycontainer.lua
+65B8A22AC8B9CDFC,ui/generated/widgets/ingame/sp/scriptedwidgetoverlayspycamera.lua
+7BEFA6DDD8E9218A,ui/generated/widgets/ingame/sp/hint/rex/hintinteraction.lua

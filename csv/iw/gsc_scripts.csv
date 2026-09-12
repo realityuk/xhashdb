@@ -4378,3 +4378,5 @@ hash,name
 7FEDD13267C3CACB,scripts/mp/maps/mp_jup_st_c_gw/mp_jup_st_c_gw_precache.gsc
 7FF3A914E6C698C5,scripts/asm/shared/variant_asm.gsc
 7FF5279EF2A93CF0,scripts/mp/maps/mp_crossing/mp_crossing_lighting.gsc
+1E5583994E2068A8,scripts/mp/common/equipment/sweeper_drones.gsc
+785265C2027066BF,scripts/mp/common/killstreaks/helper_drone.gsc
