@@ -4459,3 +4459,6 @@ hash,name
 7FF56CA050E17ACC,ui.generated.widgets.frontend.itemexchangepopup
 7FFAB5552DC3EC69,ui.generated.widgets.ingame.reticles.reticlehybrid03vdayheart
 1B889071C9ED8462,ui.generated.widgets.ingame.rew.scriptedwidgetvictorydefeatscreen
+06BD78D6DE8A9662,ui.generated.widgets.ingame.mp.matchstatusplayer
+57FE342E42019B6B,ui.generated.widgets.frontend.weapons.mpweaponmenubutton
+7531CDAE77BF3334,ui.generated.widgets.frontend.mp.cas.weaponattribute
